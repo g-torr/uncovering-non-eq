@@ -1,8 +1,13 @@
+# Data
+*.pkl
+# Figure
+*.pdf
+*.svg
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
-
+*._.DS_Store
 # C extensions
 *.so
 
