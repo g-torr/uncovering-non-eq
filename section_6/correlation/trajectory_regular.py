@@ -80,9 +80,14 @@ def main():
     for kind in ['symmetric','asymmetric','antisymmetric']:
         #kind = 'symmetric'
         J = make_network(N, kin,kind=kind)
-        C,P_sim = correlation_module.replics_gpu(J, cp.random.rand(N), T, N_replics,N_iterations)
+        if no_gpu:
+            threads = -1
+            C,P_sim = correlation_module.replics_parallel(J, np.random.rand(N), T, N_replics, N_iterations,threads)
+        else:
+            C,P_sim = correlation_module.replics_gpu(J, cp.random.rand(N), T, N_replics,N_iterations)
+
+
         P_A,P_B,P_t = cavity_symmetric.cavity_iteration(J,T,max_iter = 10)
-        #corr_cav = correlation_module.correlation_cavity(J,T,theta)
         dic = {'C':C,'P_cav':P_t,'P_sim': P_sim,'N_replics':N_replics,'N_iterations':N_iterations,'T':T,'N':N,'kin':kin,'J':J, 'descr' : 'C has 2 dimension, dimension 0 runs over the nodes, dimension 1 gives the lag up to cutoff. C is averaged over replics'}
         save_obj(dic,kin,T,kind)
         print('saved '+kind)

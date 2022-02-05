@@ -3,11 +3,6 @@ import numpy as np
 import networkx as nx
 import scipy
 import sys
-try :
-    import cupy as cp #if not 
-    from cupyx.scipy.sparse import csr_matrix as csr_gpu
-except ImportError:
-    print('GPU mode not available')
 
 sys.path.insert(0, "lib")  # add the library folder to the path I look for modules
 import argparse
@@ -213,11 +208,18 @@ def main():
     if T is None:
         raise ValueError(' Specify the argument -T')
     #theta = args.theta
+    no_gpu = args.no_gpu
     N_replics = args.Nreplic
     threads = args.nprocess
     N_iterations = 30000
     N = J.shape[0]
-    if args.no_gpu:
+    try :
+        import cupy as cp #if not 
+        from cupyx.scipy.sparse import csr_matrix as csr_gpu
+    except ImportError:
+        print('GPU mode not available')
+        no_gpu = True
+    if no_gpu:
         P_sim,C_sim = replics_parallel(J, np.random.rand(N), T, N_replics, N_iterations,threads)
     else:
         P_sim,C_sim = replics_gpu(csr_gpu(J), cp.random.rand(N), T, N_replics, N_iterations)

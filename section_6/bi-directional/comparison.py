@@ -1,22 +1,16 @@
 import numpy as np
-import matplotlib.pyplot as plt
 import scipy
-import random
 import itertools
-from functools import lru_cache
 from collections import Counter,defaultdict
 import networkx as nx
-import cupy as cp
-from cupyx.scipy.sparse import csr_matrix as csr_gpu
 import sys
 import logging
 import os
 import pickle
-import time
 sys.path.insert(0, "../../lib")  # add the library folder to the path I look for modules
-sys.path.insert(0, "../lib")  # add the library folder to the path I look for modules
 import dynamical_cavity
 import cavity_symmetric
+import simulation
 
 def round_even(x):
     '''round to closest even'''
@@ -87,43 +81,6 @@ def make_epsilon(J):
 
 
 
-
-def replics_gpu(J, P_init, T, N_replics,N_iterations):
-
-    def dynamics_gpu(J, n, T,N_iterations):
-        if not (type(J) is csr_gpu):
-            print('Coupling matrix should be of type'+str(csr_gpu)+', I try to convert')
-            J = csr_gpu(J)
-        #local_state = cp.random.seed(seed)
-        N1 = J.shape[0]
-        N_therm = 100
-        t = 0
-        while t < N_therm:
-            z = cp.random.logistic(0, T , (1, N1))
-            # z=numpy.random.normal(0,2*T,(1,N1))
-            a = n * J - z
-            n = cp.where(a > 0, 1, 0.)[0]
-            t += 1
-        t = 0
-        #N_iterati%load_ext line_profilerons =max(int(np.log(1-alpha)/np.log(0.5*(1+np.tanh(1/2/T)))),1000)# number iterations grows at low temperature. See notes
-        m = cp.zeros(N1)
-        while t < N_iterations:
-            z = cp.random.logistic(0, T , (1, N1),dtype=cp.float32)
-            # z=numpy.random.normal(0,2*T,(1,N1))
-            a = n * J - z
-            n = cp.where(a > 0, 1, 0.)[0]
-            m += n
-            t += 1
-
-        return m / t
-
-
-    N = J.shape[0]
-    initial_states = cp.where(cp.random.rand(N_replics,N,dtype=cp.float32) > P_init, 1, 0)
-    P_sim = itertools.starmap(dynamics_gpu, itertools.product([J], initial_states, [T], [N_iterations]))
-    #P_sim = cp.mean(cp.asarray(list(P_sim)), axis=0)
-    return cp.asnumpy(cp.asarray(list(P_sim)))
-
 def main():
     '''
     It generate one undirected network, then three interaction matrix are generated:
@@ -131,7 +88,12 @@ def main():
     - asymmetric interactrion (J_{ij}and J_{ji} independent)
     - antisymmetric interaction (J_{ij}==-J_{ji})
     '''
-
+    no_gpu = False
+    try:
+        import cupy as cp
+        from cupyx.scipy.sparse import csr_matrix as csr_gpu
+    except ImportError:
+            no_gpu = True
     N = 10000
     gamma = 3
     T = .5
@@ -144,7 +106,11 @@ def main():
         logging.info('OTA completed for  %s', kind)
         N_replics = 500
         N_iterations = 1e4
-        sim =  replics_gpu(csr_gpu(J_kind), cp.random.rand(J.shape[0]), T, N_replics,N_iterations)
+        if no_gpu:
+            threads = -1 #number of process to be run in parallel, negative if all cores available
+            sim = simulation.replics_parallel(J_kind, np.random.rand(J.shape[0]), T, N_replics,N_iterations,threads)
+        else:
+            sim =  simulation.replics_gpu(csr_gpu(J_kind), cp.random.rand(J.shape[0]), T, N_replics,N_iterations)
         logging.info('simulation completed for  %s', kind)
         P_memless = dynamical_cavity.cavity_caller(J_kind,T,0,J0 = 1,precision=1e-8) #Try without taking into account memory effects
         dic = {'J':J_kind,'trj':trj,'P_memless':P_memless,'sim':sim,'T':T,'N_iterations':N_iterations}

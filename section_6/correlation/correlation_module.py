@@ -1,9 +1,9 @@
+from ctypes.wintypes import POINT
 import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
 from functools import lru_cache
-import cupy as cp
-from cupyx.scipy.sparse import csr_matrix as csr_gpu
+
 import itertools
 import time
 import os
@@ -26,7 +26,7 @@ def save_obj(obj,kin,T,kind):
     with open(directory(kin)+'/data/dic-' + name , 'wb') as f:
         pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
 
-def replics_parallel(J, P_init, T, N_replics,N_iterations):
+def replics_parallel(J, P_init, T, N_replics,N_iterations,threads):
     '''Simulation at fixed T for different replicas
     Initial condition is chosen to be the same as for cavity'''
     '''
@@ -36,11 +36,13 @@ def replics_parallel(J, P_init, T, N_replics,N_iterations):
         pool = Pool(int(threads))
     '''
     different_seed = np.random.randint(1, 2 ** 32 - 1, N_replics)
-
-    data = itertools.starmap(dynamics_parallel, itertools.product([J], [P_init], [T],different_seed, [N_iterations]))
-    # for replica in range(N_replic):
-    #        data+=[dynamics_light(J,psi_init,T)]
-    #pool.close()
+    from multiprocessing import Pool
+    if threads < 0:
+        pool = Pool()
+    else:
+        pool = Pool(int(threads))         
+    data = pool.starmap(dynamics_parallel, itertools.product([J], [P_init], [T],different_seed, [N_iterations]))
+    pool.close()
     cutoff_correlation = 1000
     C_run_mean = np.zeros(N_iterations)
     C = np.zeros((N,N_iterations))
@@ -65,6 +67,8 @@ def replics_gpu(J, P_init, T, N_replics,N_iterations):
     else:
         pool = Pool(int(threads))
     '''
+    import cupy as cp
+    from cupyx.scipy.sparse import csr_matrix as csr_gpu
     N = J.shape[0]
     initial_states = cp.where(cp.random.rand(N_replics,N,dtype=cp.float32) > P_init, 1, 0)
     data = itertools.starmap(dynamics_gpu, itertools.product([J], initial_states, [T], [N_iterations]))
