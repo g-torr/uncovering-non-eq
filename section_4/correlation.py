@@ -161,7 +161,14 @@ def make_matrix(N,  corr):
 def main():
     startTime = datetime.now()
     parser = argparse.ArgumentParser(
-        description='Simulation of magnetisation for spin glass. Many replica considered. Use the argument --create_graph if you do not want to load the matrix of couplings from the dictionary. Data will be saved in the data folder. Read the Readme.md for more info ')
+        description='Pairwise correlation from cavity and simulation. Returns:\n'
+                    'a dictionary containing the topology "J", and the activation probability "data". \n'
+                    '"J" is a scipy.sparse matrix.\n'
+                    '"C_sim" is a numpy matrix of  pairwise node correlation from simultiojn\n'
+                    '"C_cav" is a numpy matrix of  pairwise node correlation from cavity using motifs of type 1 (see paper)\n'
+                    '"C_cav_new" is a numpy matrix of  pairwise node correlation from cavity using motifs of type 2 (see paper)\n'
+                    'Output is saved in kin=.../data/ folder.'
+                    'Use the argument --create_graph if you do not want to load the matrix of couplings from the dictionary. Data will be saved in the data folder.',formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument("-N", help="Number of genes", type=int, const=1000, default=1000, nargs='?')
     #parser.add_argument("-N2", help="Number of TF", type=int, const=1000, default=1000, nargs='?')
     parser.add_argument('--kin', type=int, default=3, help=" in degree of genes. Default set to 3")
@@ -173,7 +180,7 @@ def main():
     #parser.add_argument('--eta', type=float, default=0.5, help="eta. Probability of positive couplings /all lins. Default set to 0.5")
     parser.add_argument('--nprocess', type=int, const=-1,default=-1,nargs='?', help="number of processes run in parallel, i.e. number of cores to be used in your local machine. Default all cores available")
     parser.add_argument('--parallel_corr',action="store_true",default=False)
-    parser.add_argument('--no_gpu',action="store_true",default=False)
+    parser.add_argument('--no_gpu',action="store_true",default=False,help = 'By default the code try to run the simulation on the gpu if possible. If you want to use the CPU, select this option')
     args = parser.parse_args()
     N, kin = load_input(args)
     if args.create_graph == False:

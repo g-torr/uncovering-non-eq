@@ -14,6 +14,7 @@ import os
 sys.path.insert(0, "../lib")  # add the library folder to the path I look for modules
 from dynamical_cavity import  cavity_AND_parallel
 from configurational_model_regulatory import mirroring
+
 def directory(gamma_G,gamma_TF):
     path = '.'+os.path.dirname(__file__)
     return path+'/gamma_G_'+str(gamma_G)+'gamma_TF_'+str(gamma_TF)
@@ -116,15 +117,22 @@ def load_obj(gamma_G,gamma_TF,name):
 def main():
     
     parser = argparse.ArgumentParser(
-        description='Simulation of magnetisation for spin glass. Many replica considered. Use the argument --create_graph if you do not want to load the matrix of couplings from the dictionary. Data will be saved in the data folder. Read the Readme.md for more info ')
+        description='Probability of node activtion for the multi-node interaction model defined on a bipartite graphs (see paper) \n'
+                    'Returns:\n'
+                    'a dictionary containing the topology "J", and the activation probability "data". \n'
+                    '"J" is a scipy.sparse matrix.\n'
+                    '"data" is a 2d list containing single node activation probabilities at different noise parameters T.\n'
+                    'Output is saved in /data/ folder with unique identifier. Simulation for different values of T are run in parallel. By default, code runs on  all cores available on your machine.',formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument("-N1", help="Number of genes", type=int, const=200000, default=200000, nargs='?')
     parser.add_argument("-N2", help="Number of TFs", type=int, const=200000, default=200000, nargs='?')
     #parser.add_argument("-N2", help="Number of TF", type=int, const=1000, default=1000, nargs='?')
     parser.add_argument('--gamma_G', type=float, default=1.81, help=" gamma in degree of genes. Default set to 3")
     parser.add_argument('--gamma_TF', type=float, default=1.81, help="gamma in degree of TFs. Default set to 4")
+    parser.add_argument('--nprocess', type=int, const=-1,default=-1,nargs='?', help="number of processes run in parallel, i.e. number of cores to be used in your local machine. Default all cores available")
     parser.add_argument('--create_graph', help='Create a new graph and does not load ', action='store_true')
     args = parser.parse_args()
     N1,N2, gamma_G,gamma_TF = load_input(args)
+    threads = args.nprocess
     bias = 0.379
     if args.create_graph == False:
         try:
@@ -160,7 +168,7 @@ def main():
     Ts = np.arange(0.01,1.,0.003)
     theta=0
     P_g = 0.5 * np.ones(N1)
-    data = cavity_AND_parallel(P_g,Ts,R,M,theta,J0 = 1)
+    data = cavity_AND_parallel(P_g,Ts,R,M,theta,J0 = 1,threads = threads)
     dic = {"gamma_G": gamma_G,"gamma_TF": gamma_TF,  "N1": N1, "N2": N2,  "R": R, "M":M, "Ts": Ts,  "data": data}
     save_obj(dic, gamma_G,gamma_TF,theta)
 

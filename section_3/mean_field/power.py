@@ -8,9 +8,10 @@ import argparse
 from argparse import RawTextHelpFormatter
 import os
 import time
+from mean_field import mean_field
 sys.path.insert(0, "../../lib")  # add the library folder to the path I look for modules
 from dynamical_cavity import cavity
-#import dynamical_cavity as cavity # this script computes the dynamical cavity
+
 def directory(gamma):
     path = '.'+os.path.dirname(__file__)
     return path+'/gamma='+str(gamma)
@@ -58,32 +59,6 @@ def make_network(N, gamma,bias):
     sign_interaction = np.where(np.random.rand(J.nnz) > bias, 1, -1)  # bias in positive regulation
     J.data = np.ravel(sign_interaction)  # add negative element
     return J
-def mean_field(P, js, T, interaction, N, Ks, theta=0, precision=1e-4, max_iter=50):
-    """
-    Run the dynamical cavity with recursive calls.
-    :param P_init: list of floats of length N
-    :param T: float
-    :param J: sparse.csr_matrix
-    :param theta: float (in units of 1/sqrt(<K>))
-    :param max_iter: int
-    :param precision: float
-    :return: P_new it is a  list of dimensions N which contains the probability of active state for each gene.
-    In order to help storing, couplings are taken to be +-1, bias is then rescaled by 1/sqrt(<|J_{ij}|>)
-    """
-    avg_degree = np.mean(Ks)
-    P_new = np.zeros(N)
-    for count in range(max_iter):
-        for i,(inter,j) in enumerate(zip(interaction,js)):
-            P_new[i] = 0.5*(1+np.tanh((sum(inter*P[j])-theta)/2/T/ np.sqrt(avg_degree)))
-        if max(np.abs(np.array(P) - np.array(P_new))) < precision:
-            P = P_new
-            print('finishing after', count, 'iterations')
-            break
-        if count == max_iter-1:
-            print("Maximum number of repetition reached, but target  precision has not been reached. ")
-        P = P_new.copy()
-
-    return P
 
 def compute_mean_magn(J,T,theta):
     J_transpose = J.transpose().tolil()
