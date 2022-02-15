@@ -276,8 +276,8 @@ def main():
     P_A,P_B,P_t_C1 = cavity_C1(J,T,150)
     P_A,P_B,P_t_C2 = cavity_C2(J,T,150)
     P_A,P_B,P_t_C3 = cavity_C3(J,T,150)
-    N_replics = 50
-    N_iterations = 1e5
+    N_replics = 500
+    N_iterations = 1e4
     no_gpu = False
     if no_gpu:
         threads = -1 #number of process to be run in parallel, negative if all cores available

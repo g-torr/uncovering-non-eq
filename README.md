@@ -1,5 +1,5 @@
 # Uncovering the non-equilibrium stationary properties in sparse Boolean networks
-This repository reproduces the result of the manuscript *Uncovering the non-equilibrium stationary properties in sparse Boolean networks*
+This repository reproduces the result of the manuscript *Uncovering the non-equilibrium stationary properties in sparse Boolean networks*, [link to arXiv](https://arxiv.org/abs/2202.06705)
 ## Requirements
 Code requires python > 3.6 and the following libraries:
 - networkx
